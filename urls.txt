@@ -3,5 +3,4 @@
 # 1行に1URLを記述してください
 
 https://koala.com/ja-jp/blog/sleep/side_of_the_tongue/
-https://koala.com/ja-jp/blog/sleep/hemispheric-sleep/
-https://koala.com/ja-jp/blog/sleep/koala-sleeping-time/
+
