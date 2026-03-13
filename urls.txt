@@ -1,0 +1,7 @@
+# AIコンテンツ監査ツール - 分析対象URLリスト
+# 「#」で始まる行はコメントとして無視されます
+# 1行に1URLを記述してください
+
+https://www.python.org/
+https://docs.python.org/ja/3/
+https://www.anthropic.com/
