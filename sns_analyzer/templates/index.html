@@ -279,7 +279,33 @@
       // ★ dashboard を先に表示してから canvas のサイズを確定させてチャートを描く
       document.getElementById('dashboard').classList.remove('hidden');
 
+      // 8感情バー表示（Chart.js に依存しないので最初に実行）
+      const emo = data.summary.emotions_avg;
+      const emotionDefs = [
+        { key: 'joy',          label: '喜び',   color: '#fbbf24' },
+        { key: 'trust',        label: '信頼',   color: '#34d399' },
+        { key: 'anticipation', label: '期待',   color: '#60a5fa' },
+        { key: 'surprise',     label: '驚き',   color: '#a78bfa' },
+        { key: 'anxiety',      label: '不安',   color: '#fb923c' },
+        { key: 'sadness',      label: '悲しみ', color: '#6b7280' },
+        { key: 'disgust',      label: '嫌悪',   color: '#84cc16' },
+        { key: 'anger',        label: '怒り',   color: '#f87171' },
+      ];
+      const barsHtml = emotionDefs.map(e => {
+        const val = emo[e.key] || 0;
+        return `
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="width:52px;font-size:12px;color:#9ca3af;text-align:right;flex-shrink:0;">${e.label}</span>
+            <div style="flex:1;background:#1f2937;border-radius:4px;height:18px;overflow:hidden;">
+              <div style="width:${val}%;height:100%;background:${e.color};border-radius:4px;transition:width .5s;"></div>
+            </div>
+            <span style="width:32px;font-size:12px;color:#e5e7eb;text-align:right;flex-shrink:0;">${val}</span>
+          </div>`;
+      }).join('');
+      document.getElementById('emotionBars').innerHTML = barsHtml;
+
       // ドーナツ
+      try {
       if (donutChart) donutChart.destroy();
       donutChart = new Chart(document.getElementById('donutChart'), {
         type: 'doughnut',
@@ -311,31 +337,7 @@
           plugins: { legend: { labels: { color: '#9ca3af' } } },
         }
       });
-
-      // 8感情バー表示
-      const emo = data.summary.emotions_avg;
-      const emotionDefs = [
-        { key: 'joy',          label: '喜び',   color: '#fbbf24' },
-        { key: 'trust',        label: '信頼',   color: '#34d399' },
-        { key: 'anticipation', label: '期待',   color: '#60a5fa' },
-        { key: 'surprise',     label: '驚き',   color: '#a78bfa' },
-        { key: 'anxiety',      label: '不安',   color: '#fb923c' },
-        { key: 'sadness',      label: '悲しみ', color: '#6b7280' },
-        { key: 'disgust',      label: '嫌悪',   color: '#84cc16' },
-        { key: 'anger',        label: '怒り',   color: '#f87171' },
-      ];
-      const barsHtml = emotionDefs.map(e => {
-        const val = emo[e.key] || 0;
-        return `
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="width:52px;font-size:12px;color:#9ca3af;text-align:right;flex-shrink:0;">${e.label}</span>
-            <div style="flex:1;background:#1f2937;border-radius:4px;height:18px;overflow:hidden;">
-              <div style="width:${val}%;height:100%;background:${e.color};border-radius:4px;transition:width .5s;"></div>
-            </div>
-            <span style="width:32px;font-size:12px;color:#e5e7eb;text-align:right;flex-shrink:0;">${val}</span>
-          </div>`;
-      }).join('');
-      document.getElementById('emotionBars').innerHTML = barsHtml;
+      } catch(e) { console.warn('Chart.js error:', e); }
 
     }
 
