@@ -9,10 +9,19 @@ import anthropic
 from datetime import datetime
 
 
-def _generate_summary_text(client: anthropic.Anthropic, keyword: str, summary: dict,
+def _generate_summary_text(client, keyword: str, summary: dict,
                             trend: dict, risk: dict, influencers: list) -> str:
     """Claudeに分析レポートの文章生成を依頼する"""
     top_influencers = [f"@{i['author']}（スコア{i['influence_score']}）" for i in influencers[:3]]
+
+    if client is None:
+        return (
+            f"【モックモード】「{keyword}」の分析結果サマリーです。"
+            f"総投稿{summary['total']}件中、ポジティブ{summary['positive_pct']}%・"
+            f"ネガティブ{summary['negative_pct']}%・平均スコア{summary['avg_score']}でした。"
+            f"トレンドは{trend.get('momentum','不明')}、炎上リスクは{risk['level']}（{risk['score']}/100）です。"
+            f"Claude APIを設定するとAI生成のインサイトが追加されます。"
+        )
 
     prompt = f"""以下のSNS分析データを基に、ブランド担当者向けの週次レポートを日本語で作成してください。
 
