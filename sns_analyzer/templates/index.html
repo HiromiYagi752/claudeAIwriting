@@ -113,10 +113,10 @@
         <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
           <h3 class="font-semibold text-gray-200">ツイート一覧</h3>
           <div class="flex gap-2 text-xs" id="filterBtns">
-            <button onclick="filterTweets('all')" class="filter-btn active px-3 py-1 rounded-full bg-gray-700 text-white">すべて</button>
-            <button onclick="filterTweets('positive')" class="filter-btn px-3 py-1 rounded-full bg-gray-800 text-gray-400">ポジティブ</button>
-            <button onclick="filterTweets('negative')" class="filter-btn px-3 py-1 rounded-full bg-gray-800 text-gray-400">ネガティブ</button>
-            <button onclick="filterTweets('neutral')" class="filter-btn px-3 py-1 rounded-full bg-gray-800 text-gray-400">ニュートラル</button>
+            <button onclick="filterTweets('all', this)" class="filter-btn active px-3 py-1 rounded-full bg-gray-700 text-white">すべて</button>
+            <button onclick="filterTweets('positive', this)" class="filter-btn px-3 py-1 rounded-full bg-gray-800 text-gray-400">ポジティブ</button>
+            <button onclick="filterTweets('negative', this)" class="filter-btn px-3 py-1 rounded-full bg-gray-800 text-gray-400">ネガティブ</button>
+            <button onclick="filterTweets('neutral', this)" class="filter-btn px-3 py-1 rounded-full bg-gray-800 text-gray-400">ニュートラル</button>
           </div>
         </div>
         <div id="tweetList" class="divide-y divide-gray-800"></div>
@@ -215,19 +215,22 @@
         }
       });
 
-      // ツイート一覧
-      filterTweets('all');
+      // ツイート一覧（最初は「すべて」ボタンを指定して呼ぶ）
+      const allBtn = document.querySelector('.filter-btn');
+      filterTweets('all', allBtn);
       document.getElementById('dashboard').classList.remove('hidden');
     }
 
-    function filterTweets(label) {
+    function filterTweets(label, btn) {
       // ボタンのスタイル切り替え
-      document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active', 'bg-gray-700', 'text-white');
-        btn.classList.add('bg-gray-800', 'text-gray-400');
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.remove('active', 'bg-gray-700', 'text-white');
+        b.classList.add('bg-gray-800', 'text-gray-400');
       });
-      event.target.classList.add('active', 'bg-gray-700', 'text-white');
-      event.target.classList.remove('bg-gray-800', 'text-gray-400');
+      if (btn) {
+        btn.classList.add('active', 'bg-gray-700', 'text-white');
+        btn.classList.remove('bg-gray-800', 'text-gray-400');
+      }
 
       const tweets = label === 'all' ? allTweets : allTweets.filter(t => t.label === label);
       const list = document.getElementById('tweetList');
