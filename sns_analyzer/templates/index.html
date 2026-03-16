@@ -249,6 +249,36 @@
       document.getElementById('negativePct').textContent = data.summary.negative_pct + '%';
       document.getElementById('avgScore').textContent = data.summary.avg_score;
 
+      // 炎上アラート
+      if (data.risk.alert) {
+        const alert = document.getElementById('riskAlert');
+        const levelLabel = { warning: '要注意', critical: '緊急アラート' }[data.risk.level] || '';
+        const levelClass = data.risk.level === 'critical'
+          ? 'bg-red-950 border-red-700 text-red-300'
+          : 'bg-yellow-950 border-yellow-700 text-yellow-300';
+        alert.className = `mb-6 rounded-xl p-4 border flex items-center gap-3 ${levelClass}`;
+        document.getElementById('riskAlertTitle').textContent = `炎上リスク ${levelLabel}（スコア: ${data.risk.score}）`;
+        document.getElementById('riskAlertBody').textContent = data.risk.reason;
+        alert.classList.remove('hidden');
+      } else {
+        document.getElementById('riskAlert').classList.add('hidden');
+      }
+
+      // トレンド予測パネル（テキストのみ）
+      renderTrendPanel(data.trend);
+
+      // 炎上リスクパネル（テキストのみ）
+      renderRiskPanel(data.risk);
+
+      // インフルエンサーパネル
+      renderInfluencerPanel(data.influencers);
+
+      // ツイート一覧
+      filterTweets('all', document.querySelector('.filter-btn'));
+
+      // ★ dashboard を先に表示してから canvas のサイズを確定させてチャートを描く
+      document.getElementById('dashboard').classList.remove('hidden');
+
       // ドーナツ
       if (donutChart) donutChart.destroy();
       donutChart = new Chart(document.getElementById('donutChart'), {
@@ -311,32 +341,6 @@
         }
       });
 
-      // トレンド予測パネル
-      renderTrendPanel(data.trend);
-
-      // 炎上リスクパネル
-      renderRiskPanel(data.risk);
-
-      // インフルエンサーパネル
-      renderInfluencerPanel(data.influencers);
-
-      // 炎上アラート
-      if (data.risk.alert) {
-        const alert = document.getElementById('riskAlert');
-        const levelLabel = { warning: '要注意', critical: '緊急アラート' }[data.risk.level] || '';
-        const levelClass = data.risk.level === 'critical'
-          ? 'bg-red-950 border-red-700 text-red-300'
-          : 'bg-yellow-950 border-yellow-700 text-yellow-300';
-        alert.className = `mb-6 rounded-xl p-4 border flex items-center gap-3 ${levelClass}`;
-        document.getElementById('riskAlertTitle').textContent = `炎上リスク ${levelLabel}（スコア: ${data.risk.score}）`;
-        document.getElementById('riskAlertBody').textContent = data.risk.reason;
-        alert.classList.remove('hidden');
-      } else {
-        document.getElementById('riskAlert').classList.add('hidden');
-      }
-
-      filterTweets('all', document.querySelector('.filter-btn'));
-      document.getElementById('dashboard').classList.remove('hidden');
     }
 
     function renderTrendPanel(trend) {
