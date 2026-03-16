@@ -41,8 +41,6 @@ def analyze():
         return jsonify({"error": "キーワードを入力してください"}), 400
 
     client = get_anthropic_client()
-    if client is None:
-        return jsonify({"error": "ANTHROPIC_API_KEY が設定されていません"}), 500
 
     tweets = search_tweets(keyword, max_results=max_results)
     if not tweets:
@@ -111,8 +109,6 @@ def compare():
         keywords = keywords[:4]
 
     client = get_anthropic_client()
-    if client is None:
-        return jsonify({"error": "ANTHROPIC_API_KEY が設定されていません"}), 500
 
     results = []
     for kw in keywords:
@@ -142,8 +138,6 @@ def report():
         return jsonify({"error": "キーワードを入力してください"}), 400
 
     client = get_anthropic_client()
-    if client is None:
-        return jsonify({"error": "ANTHROPIC_API_KEY が設定されていません"}), 500
 
     tweets = search_tweets(keyword, max_results=max_results)
     if not tweets:

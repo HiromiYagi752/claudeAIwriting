@@ -81,13 +81,50 @@ def analyze_tweet(client: anthropic.Anthropic, tweet_text: str) -> dict:
         return {"label": "neutral", "score": 50, "emotions": DEFAULT_EMOTIONS.copy(), "reason": "解析に失敗しました"}
 
 
-def analyze_tweets(client: anthropic.Anthropic, tweets: list[dict]) -> list[dict]:
+def _mock_analyze_tweet(tweet_text: str) -> dict:
+    """API未設定時のモック分析（テキストの簡易ルールベース）"""
+    import random
+    text = tweet_text.lower()
+    neg_words = ["悪", "嫌", "怒", "ひど", "最悪", "問題", "批判", "不満", "クソ", "ダメ"]
+    pos_words = ["好き", "良い", "嬉し", "楽し", "すごい", "素晴らし", "最高", "ありがとう", "感謝"]
+
+    neg_count = sum(1 for w in neg_words if w in text)
+    pos_count = sum(1 for w in pos_words if w in text)
+
+    if pos_count > neg_count:
+        label, score = "positive", random.randint(60, 90)
+    elif neg_count > pos_count:
+        label, score = "negative", random.randint(10, 40)
+    else:
+        label, score = "neutral", random.randint(40, 60)
+
+    seed = sum(ord(c) for c in tweet_text[:20])
+    rng = random.Random(seed)
+    if label == "positive":
+        emotions = {"joy": rng.randint(50, 90), "anger": rng.randint(0, 20), "sadness": rng.randint(0, 20),
+                    "surprise": rng.randint(10, 50), "anxiety": rng.randint(0, 20), "disgust": rng.randint(0, 15),
+                    "trust": rng.randint(40, 80), "anticipation": rng.randint(30, 70)}
+    elif label == "negative":
+        emotions = {"joy": rng.randint(0, 20), "anger": rng.randint(40, 80), "sadness": rng.randint(30, 70),
+                    "surprise": rng.randint(10, 40), "anxiety": rng.randint(30, 70), "disgust": rng.randint(30, 70),
+                    "trust": rng.randint(0, 20), "anticipation": rng.randint(0, 20)}
+    else:
+        emotions = {k: rng.randint(20, 50) for k in EMOTIONS_JA}
+
+    return {"label": label, "score": score, "emotions": emotions, "reason": "（モックデータ）ルールベース判定"}
+
+
+def analyze_tweets(client, tweets: list[dict]) -> list[dict]:
     """
     複数ツイートを分析して結果を付与して返す。
+    client=None の場合はモック分析を使用。
     """
     results = []
     for tweet in tweets:
-        sentiment = analyze_tweet(client, tweet["text"])
+        if client is None:
+            sentiment = _mock_analyze_tweet(tweet["text"])
+        else:
+            sentiment = analyze_tweet(client, tweet["text"])
         results.append({**tweet, "sentiment": sentiment})
     return results
 

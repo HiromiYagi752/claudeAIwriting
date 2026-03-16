@@ -38,7 +38,7 @@ def _calc_velocity(analyzed_tweets: list[dict]) -> float:
     return round(second_neg - first_neg, 3)
 
 
-def predict_trends(client: anthropic.Anthropic, analyzed_tweets: list[dict], keyword: str) -> dict:
+def predict_trends(client, analyzed_tweets: list[dict], keyword: str) -> dict:
     """
     Claudeにトレンド予測を依頼する。
     戻り値: {"trending_keywords": list, "momentum": str, "prediction": str, "peak_time": str}
@@ -67,6 +67,16 @@ def predict_trends(client: anthropic.Anthropic, analyzed_tweets: list[dict], key
   "peak_time": "ピーク時間帯の予測（例: 18〜20時）",
   "alert_keyword": "特に注目すべき1語（なければnull）"
 }}"""
+
+    if client is None:
+        momentum = "rising" if velocity > 0.1 else ("falling" if velocity < -0.1 else "stable")
+        return {
+            "trending_keywords": [kw for kw, _ in top_keywords[:3]],
+            "momentum": momentum,
+            "prediction": "（モックモード）ルールベースによる簡易予測です。Claude APIを設定すると詳細な予測が得られます。",
+            "peak_time": "18〜22時（推定）",
+            "alert_keyword": top_keywords[0][0] if top_keywords else None,
+        }
 
     message = client.messages.create(
         model="claude-haiku-4-5-20251001",
