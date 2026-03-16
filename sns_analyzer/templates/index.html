@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SNS 高度分析ツール</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/static/js/chart.min.js"></script>
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen">
 
@@ -112,8 +112,8 @@
         <!-- チャート行2：8感情レーダー + トレンド -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
           <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800">
-            <h3 class="text-sm font-semibold text-gray-400 mb-4">8感情レーダーチャート</h3>
-            <canvas id="emotionRadar" height="260"></canvas>
+            <h3 class="text-sm font-semibold text-gray-400 mb-4">8感情分析</h3>
+            <div id="emotionBars" class="space-y-2"></div>
           </div>
           <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800">
             <h3 class="text-sm font-semibold text-gray-400 mb-4">トレンド予測</h3>
@@ -188,7 +188,7 @@
 
   <script>
     let allTweets = [];
-    let donutChart, barChart, emotionRadar, compareChart, riskCompareChart;
+    let donutChart, barChart, compareChart, riskCompareChart;
     let currentKeyword = '';
     let currentMaxResults = 10;
 
@@ -312,34 +312,30 @@
         }
       });
 
-      // 8感情レーダー
+      // 8感情バー表示
       const emo = data.summary.emotions_avg;
-      const emotionLabels = ['喜び','怒り','悲しみ','驚き','不安','嫌悪','信頼','期待'];
-      const emotionKeys  = ['joy','anger','sadness','surprise','anxiety','disgust','trust','anticipation'];
-      if (emotionRadar) emotionRadar.destroy();
-      emotionRadar = new Chart(document.getElementById('emotionRadar'), {
-        type: 'radar',
-        data: {
-          labels: emotionLabels,
-          datasets: [{
-            label: '感情強度（平均）',
-            data: emotionKeys.map(k => emo[k] || 0),
-            backgroundColor: 'rgba(99,102,241,0.25)',
-            borderColor: '#818cf8',
-            pointBackgroundColor: '#818cf8',
-          }]
-        },
-        options: {
-          scales: {
-            r: {
-              min: 0, max: 100, ticks: { stepSize: 20, color: '#4b5563', backdropColor: 'transparent' },
-              grid: { color: '#1f2937' }, pointLabels: { color: '#9ca3af', font: { size: 12 } },
-              angleLines: { color: '#1f2937' },
-            }
-          },
-          plugins: { legend: { labels: { color: '#9ca3af' } } },
-        }
-      });
+      const emotionDefs = [
+        { key: 'joy',          label: '喜び',   color: '#fbbf24' },
+        { key: 'trust',        label: '信頼',   color: '#34d399' },
+        { key: 'anticipation', label: '期待',   color: '#60a5fa' },
+        { key: 'surprise',     label: '驚き',   color: '#a78bfa' },
+        { key: 'anxiety',      label: '不安',   color: '#fb923c' },
+        { key: 'sadness',      label: '悲しみ', color: '#6b7280' },
+        { key: 'disgust',      label: '嫌悪',   color: '#84cc16' },
+        { key: 'anger',        label: '怒り',   color: '#f87171' },
+      ];
+      const barsHtml = emotionDefs.map(e => {
+        const val = emo[e.key] || 0;
+        return `
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="width:52px;font-size:12px;color:#9ca3af;text-align:right;flex-shrink:0;">${e.label}</span>
+            <div style="flex:1;background:#1f2937;border-radius:4px;height:18px;overflow:hidden;">
+              <div style="width:${val}%;height:100%;background:${e.color};border-radius:4px;transition:width .5s;"></div>
+            </div>
+            <span style="width:32px;font-size:12px;color:#e5e7eb;text-align:right;flex-shrink:0;">${val}</span>
+          </div>`;
+      }).join('');
+      document.getElementById('emotionBars').innerHTML = barsHtml;
 
     }
 
