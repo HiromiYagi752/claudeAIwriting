@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SNS センチメント分析</title>
+  <title>SNS 高度分析ツール</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -11,11 +11,11 @@
 
   <!-- ヘッダー -->
   <header class="bg-gray-900 border-b border-gray-800 px-6 py-4">
-    <div class="max-w-5xl mx-auto flex items-center justify-between">
-      <h1 class="text-xl font-bold text-white">🐦 SNS センチメント分析</h1>
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <h1 class="text-xl font-bold text-white">SNS 高度分析ツール</h1>
       <div class="flex gap-2 text-sm">
         {% if mock_mode %}
-          <span class="bg-yellow-900 text-yellow-300 px-3 py-1 rounded-full">モードデータ使用中</span>
+          <span class="bg-yellow-900 text-yellow-300 px-3 py-1 rounded-full">モックデータ使用中</span>
         {% else %}
           <span class="bg-green-900 text-green-300 px-3 py-1 rounded-full">Twitter API 接続済み</span>
         {% endif %}
@@ -28,106 +28,169 @@
     </div>
   </header>
 
-  <main class="max-w-5xl mx-auto px-6 py-10">
-
-    <!-- 検索フォーム -->
-    <div class="bg-gray-900 rounded-2xl p-6 mb-8 border border-gray-800">
-      <h2 class="text-lg font-semibold mb-4 text-gray-200">キーワード検索</h2>
-      <form id="searchForm" class="flex flex-col sm:flex-row gap-3">
-        <input
-          type="text"
-          id="keyword"
-          name="keyword"
-          placeholder="例: AI, 春, 新製品..."
-          class="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-          required
-        >
-        <select
-          id="max_results"
-          name="max_results"
-          class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-        >
-          <option value="5">5件</option>
-          <option value="10" selected>10件</option>
-          <option value="20">20件</option>
-        </select>
-        <button
-          type="submit"
-          id="submitBtn"
-          class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3 rounded-xl transition"
-        >
-          分析する
-        </button>
-      </form>
-      {% if not api_ok %}
-        <p class="mt-3 text-sm text-red-400">⚠️ ANTHROPIC_API_KEY が設定されていません。環境変数を設定してください。</p>
-      {% endif %}
+  <!-- タブナビ -->
+  <div class="bg-gray-900 border-b border-gray-800">
+    <div class="max-w-6xl mx-auto px-6">
+      <nav class="flex gap-1">
+        <button onclick="switchTab('single')" id="tab-single" class="tab-btn active px-5 py-3 text-sm font-medium border-b-2 border-blue-500 text-blue-400">単一分析</button>
+        <button onclick="switchTab('compare')" id="tab-compare" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200">競合比較</button>
+      </nav>
     </div>
+  </div>
 
-    <!-- ローディング -->
-    <div id="loading" class="hidden text-center py-16">
-      <div class="inline-block animate-spin text-4xl mb-4">⚙️</div>
-      <p class="text-gray-400">Claudeがセンチメントを分析中...</p>
-    </div>
+  <main class="max-w-6xl mx-auto px-6 py-8">
 
-    <!-- エラー -->
-    <div id="errorBox" class="hidden bg-red-900 border border-red-700 rounded-xl p-4 mb-6 text-red-300"></div>
-
-    <!-- ダッシュボード -->
-    <div id="dashboard" class="hidden">
-
-      <!-- サマリーカード -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div class="bg-gray-900 rounded-2xl p-5 border border-gray-800 text-center">
-          <p class="text-sm text-gray-400 mb-1">分析件数</p>
-          <p class="text-3xl font-bold text-white" id="totalCount">-</p>
-        </div>
-        <div class="bg-green-950 rounded-2xl p-5 border border-green-900 text-center">
-          <p class="text-sm text-green-400 mb-1">ポジティブ</p>
-          <p class="text-3xl font-bold text-green-300" id="positivePct">-</p>
-        </div>
-        <div class="bg-red-950 rounded-2xl p-5 border border-red-900 text-center">
-          <p class="text-sm text-red-400 mb-1">ネガティブ</p>
-          <p class="text-3xl font-bold text-red-300" id="negativePct">-</p>
-        </div>
-        <div class="bg-gray-900 rounded-2xl p-5 border border-gray-800 text-center">
-          <p class="text-sm text-gray-400 mb-1">平均スコア</p>
-          <p class="text-3xl font-bold text-blue-300" id="avgScore">-</p>
-        </div>
+    <!-- 単一分析タブ -->
+    <div id="pane-single">
+      <div class="bg-gray-900 rounded-2xl p-6 mb-6 border border-gray-800">
+        <h2 class="text-lg font-semibold mb-4 text-gray-200">キーワード分析</h2>
+        <form id="searchForm" class="flex flex-col sm:flex-row gap-3">
+          <input type="text" id="keyword" name="keyword" placeholder="例: AI, 春, 新製品..."
+            class="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" required>
+          <select id="max_results" name="max_results" class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500">
+            <option value="5">5件</option>
+            <option value="10" selected>10件</option>
+            <option value="20">20件</option>
+          </select>
+          <button type="submit" id="submitBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3 rounded-xl transition">分析する</button>
+          <button type="button" id="reportBtn" onclick="downloadReport()" class="hidden bg-gray-700 hover:bg-gray-600 text-white font-semibold px-5 py-3 rounded-xl transition text-sm">レポート生成</button>
+        </form>
+        {% if not api_ok %}
+          <p class="mt-3 text-sm text-red-400">ANTHROPIC_API_KEY が設定されていません。</p>
+        {% endif %}
       </div>
 
-      <!-- チャート -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-        <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800">
-          <h3 class="text-sm font-semibold text-gray-400 mb-4">センチメント分布</h3>
-          <canvas id="donutChart" height="220"></canvas>
-        </div>
-        <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800">
-          <h3 class="text-sm font-semibold text-gray-400 mb-4">時間帯別センチメント</h3>
-          <canvas id="barChart" height="220"></canvas>
-        </div>
+      <div id="loading" class="hidden text-center py-16">
+        <div class="inline-block animate-spin text-4xl mb-4">⚙️</div>
+        <p class="text-gray-400">Claudeが分析中...</p>
       </div>
+      <div id="errorBox" class="hidden bg-red-900 border border-red-700 rounded-xl p-4 mb-6 text-red-300"></div>
 
-      <!-- ツイート一覧 -->
-      <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-          <h3 class="font-semibold text-gray-200">ツイート一覧</h3>
-          <div class="flex gap-2 text-xs" id="filterBtns">
-            <button onclick="filterTweets('all', this)" class="filter-btn active px-3 py-1 rounded-full bg-gray-700 text-white">すべて</button>
-            <button onclick="filterTweets('positive', this)" class="filter-btn px-3 py-1 rounded-full bg-gray-800 text-gray-400">ポジティブ</button>
-            <button onclick="filterTweets('negative', this)" class="filter-btn px-3 py-1 rounded-full bg-gray-800 text-gray-400">ネガティブ</button>
-            <button onclick="filterTweets('neutral', this)" class="filter-btn px-3 py-1 rounded-full bg-gray-800 text-gray-400">ニュートラル</button>
+      <div id="dashboard" class="hidden">
+
+        <!-- 炎上リスクアラート -->
+        <div id="riskAlert" class="hidden mb-6 rounded-xl p-4 border flex items-center gap-3">
+          <span class="text-2xl">🚨</span>
+          <div>
+            <p class="font-bold" id="riskAlertTitle"></p>
+            <p class="text-sm" id="riskAlertBody"></p>
           </div>
         </div>
-        <div id="tweetList" class="divide-y divide-gray-800"></div>
+
+        <!-- センチメントサマリー -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <div class="bg-gray-900 rounded-2xl p-5 border border-gray-800 text-center">
+            <p class="text-sm text-gray-400 mb-1">分析件数</p>
+            <p class="text-3xl font-bold text-white" id="totalCount">-</p>
+          </div>
+          <div class="bg-green-950 rounded-2xl p-5 border border-green-900 text-center">
+            <p class="text-sm text-green-400 mb-1">ポジティブ</p>
+            <p class="text-3xl font-bold text-green-300" id="positivePct">-</p>
+          </div>
+          <div class="bg-red-950 rounded-2xl p-5 border border-red-900 text-center">
+            <p class="text-sm text-red-400 mb-1">ネガティブ</p>
+            <p class="text-3xl font-bold text-red-300" id="negativePct">-</p>
+          </div>
+          <div class="bg-gray-900 rounded-2xl p-5 border border-gray-800 text-center">
+            <p class="text-sm text-gray-400 mb-1">平均スコア</p>
+            <p class="text-3xl font-bold text-blue-300" id="avgScore">-</p>
+          </div>
+        </div>
+
+        <!-- チャート行1 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+          <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+            <h3 class="text-sm font-semibold text-gray-400 mb-4">センチメント分布</h3>
+            <canvas id="donutChart" height="220"></canvas>
+          </div>
+          <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+            <h3 class="text-sm font-semibold text-gray-400 mb-4">時間帯別センチメント</h3>
+            <canvas id="barChart" height="220"></canvas>
+          </div>
+        </div>
+
+        <!-- チャート行2：8感情レーダー + トレンド -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+          <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+            <h3 class="text-sm font-semibold text-gray-400 mb-4">8感情レーダーチャート</h3>
+            <canvas id="emotionRadar" height="260"></canvas>
+          </div>
+          <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+            <h3 class="text-sm font-semibold text-gray-400 mb-4">トレンド予測</h3>
+            <div id="trendPanel" class="space-y-3"></div>
+          </div>
+        </div>
+
+        <!-- 炎上リスク + インフルエンサー -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+          <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+            <h3 class="text-sm font-semibold text-gray-400 mb-4">炎上リスクスコア</h3>
+            <div id="riskPanel"></div>
+          </div>
+          <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+            <h3 class="text-sm font-semibold text-gray-400 mb-4">インフルエンサー TOP5</h3>
+            <div id="influencerPanel"></div>
+          </div>
+        </div>
+
+        <!-- ツイート一覧 -->
+        <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-200">ツイート一覧</h3>
+            <div class="flex gap-2 text-xs" id="filterBtns">
+              <button onclick="filterTweets('all', this)" class="filter-btn active px-3 py-1 rounded-full bg-gray-700 text-white">すべて</button>
+              <button onclick="filterTweets('positive', this)" class="filter-btn px-3 py-1 rounded-full bg-gray-800 text-gray-400">ポジティブ</button>
+              <button onclick="filterTweets('negative', this)" class="filter-btn px-3 py-1 rounded-full bg-gray-800 text-gray-400">ネガティブ</button>
+              <button onclick="filterTweets('neutral', this)" class="filter-btn px-3 py-1 rounded-full bg-gray-800 text-gray-400">ニュートラル</button>
+            </div>
+          </div>
+          <div id="tweetList" class="divide-y divide-gray-800"></div>
+        </div>
+
+      </div>
+    </div><!-- /pane-single -->
+
+    <!-- 競合比較タブ -->
+    <div id="pane-compare" class="hidden">
+      <div class="bg-gray-900 rounded-2xl p-6 mb-6 border border-gray-800">
+        <h2 class="text-lg font-semibold mb-2 text-gray-200">競合比較分析</h2>
+        <p class="text-sm text-gray-500 mb-4">最大4つのキーワードをカンマ区切りで入力してください（例: iPhone, Galaxy, Pixel）</p>
+        <form id="compareForm" class="flex flex-col sm:flex-row gap-3">
+          <input type="text" id="compareKeywords" name="keywords" placeholder="例: iPhone, Galaxy, Pixel"
+            class="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" required>
+          <select id="compareMax" name="max_results" class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500">
+            <option value="5" selected>各5件</option>
+            <option value="10">各10件</option>
+          </select>
+          <button type="submit" id="compareBtn" class="bg-purple-600 hover:bg-purple-500 text-white font-semibold px-6 py-3 rounded-xl transition">比較する</button>
+        </form>
       </div>
 
-    </div>
+      <div id="compareLoading" class="hidden text-center py-16">
+        <div class="inline-block animate-spin text-4xl mb-4">⚙️</div>
+        <p class="text-gray-400">比較分析中...</p>
+      </div>
+      <div id="compareError" class="hidden bg-red-900 border border-red-700 rounded-xl p-4 mb-6 text-red-300"></div>
+      <div id="compareResult" class="hidden space-y-6">
+        <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+          <h3 class="text-sm font-semibold text-gray-400 mb-4">センチメント比較</h3>
+          <canvas id="compareChart" height="200"></canvas>
+        </div>
+        <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+          <h3 class="text-sm font-semibold text-gray-400 mb-4">炎上リスク比較</h3>
+          <canvas id="riskCompareChart" height="160"></canvas>
+        </div>
+        <div id="compareTable"></div>
+      </div>
+    </div><!-- /pane-compare -->
+
   </main>
 
   <script>
     let allTweets = [];
-    let donutChart, barChart;
+    let donutChart, barChart, emotionRadar, compareChart, riskCompareChart;
+    let currentKeyword = '';
+    let currentMaxResults = 10;
 
     const labelConfig = {
       positive: { color: 'text-green-400', bg: 'bg-green-950', border: 'border-green-900', badge: 'bg-green-900 text-green-300', text: 'ポジティブ' },
@@ -135,29 +198,39 @@
       neutral:  { color: 'text-gray-400',  bg: 'bg-gray-900',  border: 'border-gray-800',  badge: 'bg-gray-700 text-gray-300',   text: 'ニュートラル' },
     };
 
+    // ---- Tab Switch ----
+    function switchTab(tab) {
+      ['single', 'compare'].forEach(t => {
+        document.getElementById('pane-' + t).classList.toggle('hidden', t !== tab);
+        const btn = document.getElementById('tab-' + t);
+        btn.classList.toggle('border-blue-500', t === tab);
+        btn.classList.toggle('text-blue-400', t === tab);
+        btn.classList.toggle('border-transparent', t !== tab);
+        btn.classList.toggle('text-gray-400', t !== tab);
+      });
+    }
+
+    // ---- Single Analysis ----
     document.getElementById('searchForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const keyword = document.getElementById('keyword').value;
-      const max_results = document.getElementById('max_results').value;
+      currentKeyword = document.getElementById('keyword').value;
+      currentMaxResults = document.getElementById('max_results').value;
 
       document.getElementById('dashboard').classList.add('hidden');
       document.getElementById('errorBox').classList.add('hidden');
+      document.getElementById('reportBtn').classList.add('hidden');
       document.getElementById('loading').classList.remove('hidden');
       document.getElementById('submitBtn').disabled = true;
 
       try {
         const formData = new FormData();
-        formData.append('keyword', keyword);
-        formData.append('max_results', max_results);
-
+        formData.append('keyword', currentKeyword);
+        formData.append('max_results', currentMaxResults);
         const res = await fetch('/analyze', { method: 'POST', body: formData });
         const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || '分析に失敗しました');
-        }
-
+        if (!res.ok) throw new Error(data.error || '分析に失敗しました');
         renderDashboard(data);
+        document.getElementById('reportBtn').classList.remove('hidden');
       } catch (err) {
         document.getElementById('errorBox').textContent = '⚠️ ' + err.message;
         document.getElementById('errorBox').classList.remove('hidden');
@@ -176,22 +249,16 @@
       document.getElementById('negativePct').textContent = data.summary.negative_pct + '%';
       document.getElementById('avgScore').textContent = data.summary.avg_score;
 
-      // ドーナツチャート
+      // ドーナツ
       if (donutChart) donutChart.destroy();
       donutChart = new Chart(document.getElementById('donutChart'), {
         type: 'doughnut',
         data: {
           labels: ['ポジティブ', 'ネガティブ', 'ニュートラル'],
-          datasets: [{
-            data: [data.summary.positive, data.summary.negative, data.summary.neutral],
-            backgroundColor: ['#16a34a', '#dc2626', '#4b5563'],
-            borderWidth: 0,
-          }]
+          datasets: [{ data: [data.summary.positive, data.summary.negative, data.summary.neutral],
+            backgroundColor: ['#16a34a', '#dc2626', '#4b5563'], borderWidth: 0 }]
         },
-        options: {
-          plugins: { legend: { labels: { color: '#9ca3af' } } },
-          cutout: '65%',
-        }
+        options: { plugins: { legend: { labels: { color: '#9ca3af' } } }, cutout: '65%' }
       });
 
       // 棒グラフ
@@ -215,22 +282,266 @@
         }
       });
 
-      // ツイート一覧（最初は「すべて」ボタンを指定して呼ぶ）
-      const allBtn = document.querySelector('.filter-btn');
-      filterTweets('all', allBtn);
+      // 8感情レーダー
+      const emo = data.summary.emotions_avg;
+      const emotionLabels = ['喜び','怒り','悲しみ','驚き','不安','嫌悪','信頼','期待'];
+      const emotionKeys  = ['joy','anger','sadness','surprise','anxiety','disgust','trust','anticipation'];
+      if (emotionRadar) emotionRadar.destroy();
+      emotionRadar = new Chart(document.getElementById('emotionRadar'), {
+        type: 'radar',
+        data: {
+          labels: emotionLabels,
+          datasets: [{
+            label: '感情強度（平均）',
+            data: emotionKeys.map(k => emo[k] || 0),
+            backgroundColor: 'rgba(99,102,241,0.25)',
+            borderColor: '#818cf8',
+            pointBackgroundColor: '#818cf8',
+          }]
+        },
+        options: {
+          scales: {
+            r: {
+              min: 0, max: 100, ticks: { stepSize: 20, color: '#4b5563', backdropColor: 'transparent' },
+              grid: { color: '#1f2937' }, pointLabels: { color: '#9ca3af', font: { size: 12 } },
+              angleLines: { color: '#1f2937' },
+            }
+          },
+          plugins: { legend: { labels: { color: '#9ca3af' } } },
+        }
+      });
+
+      // トレンド予測パネル
+      renderTrendPanel(data.trend);
+
+      // 炎上リスクパネル
+      renderRiskPanel(data.risk);
+
+      // インフルエンサーパネル
+      renderInfluencerPanel(data.influencers);
+
+      // 炎上アラート
+      if (data.risk.alert) {
+        const alert = document.getElementById('riskAlert');
+        const levelLabel = { warning: '要注意', critical: '緊急アラート' }[data.risk.level] || '';
+        const levelClass = data.risk.level === 'critical'
+          ? 'bg-red-950 border-red-700 text-red-300'
+          : 'bg-yellow-950 border-yellow-700 text-yellow-300';
+        alert.className = `mb-6 rounded-xl p-4 border flex items-center gap-3 ${levelClass}`;
+        document.getElementById('riskAlertTitle').textContent = `炎上リスク ${levelLabel}（スコア: ${data.risk.score}）`;
+        document.getElementById('riskAlertBody').textContent = data.risk.reason;
+        alert.classList.remove('hidden');
+      } else {
+        document.getElementById('riskAlert').classList.add('hidden');
+      }
+
+      filterTweets('all', document.querySelector('.filter-btn'));
       document.getElementById('dashboard').classList.remove('hidden');
     }
 
+    function renderTrendPanel(trend) {
+      const momentumMap = { rising: { icon: '↑', color: 'text-green-400', label: '上昇中' }, stable: { icon: '→', color: 'text-yellow-400', label: '安定' }, falling: { icon: '↓', color: 'text-red-400', label: '下降中' } };
+      const m = momentumMap[trend.momentum] || momentumMap.stable;
+      const keywords = (trend.trending_keywords || []).map(k =>
+        `<span class="bg-indigo-950 text-indigo-300 px-2 py-1 rounded text-xs">${escapeHtml(k)}</span>`
+      ).join(' ');
+      const alertKw = trend.alert_keyword
+        ? `<p class="text-xs text-orange-400 mt-2">注目語: <strong>${escapeHtml(trend.alert_keyword)}</strong></p>` : '';
+
+      document.getElementById('trendPanel').innerHTML = `
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-3xl font-bold ${m.color}">${m.icon}</span>
+          <div><p class="font-semibold ${m.color}">${m.label}</p><p class="text-xs text-gray-500">ピーク予測: ${escapeHtml(trend.peak_time || '不明')}</p></div>
+        </div>
+        <p class="text-sm text-gray-300 leading-relaxed mb-3">${escapeHtml(trend.prediction || '')}</p>
+        <div class="flex flex-wrap gap-1">${keywords}</div>
+        ${alertKw}
+      `;
+    }
+
+    function renderRiskPanel(risk) {
+      const levelCfg = {
+        low:      { color: '#16a34a', bg: 'bg-green-950', border: 'border-green-900', label: '低リスク' },
+        warning:  { color: '#d97706', bg: 'bg-yellow-950', border: 'border-yellow-900', label: '要注意' },
+        critical: { color: '#dc2626', bg: 'bg-red-950',    border: 'border-red-900',    label: '緊急アラート' },
+      };
+      const cfg = levelCfg[risk.level] || levelCfg.low;
+      document.getElementById('riskPanel').innerHTML = `
+        <div class="flex items-center gap-4 mb-4">
+          <div class="text-5xl font-bold" style="color:${cfg.color};">${risk.score}</div>
+          <div>
+            <span class="text-xs px-2 py-1 rounded-full ${cfg.bg} ${cfg.border}" style="color:${cfg.color};">${cfg.label}</span>
+            <p class="text-xs text-gray-500 mt-1">ネガティブ率 ${risk.neg_rate}% / 速度 ${risk.velocity >= 0 ? '+' : ''}${risk.velocity}</p>
+          </div>
+        </div>
+        <p class="text-sm text-gray-300">${escapeHtml(risk.reason)}</p>
+        <div class="mt-3 bg-gray-800 rounded-full h-2">
+          <div class="h-2 rounded-full transition-all" style="width:${risk.score}%;background:${cfg.color};"></div>
+        </div>
+      `;
+    }
+
+    function renderInfluencerPanel(influencers) {
+      if (!influencers || influencers.length === 0) {
+        document.getElementById('influencerPanel').innerHTML = '<p class="text-gray-500 text-sm">データなし</p>';
+        return;
+      }
+      const rows = influencers.map((inf, i) => {
+        const cfg = labelConfig[inf.sentiment_label] || labelConfig.neutral;
+        return `
+        <div class="flex items-center gap-3 py-2 border-b border-gray-800 last:border-0">
+          <span class="text-gray-600 text-sm w-4">${i + 1}</span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-white truncate">@${escapeHtml(inf.author)}</p>
+            <p class="text-xs text-gray-500">${inf.follower_count.toLocaleString()} フォロワー</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-bold text-indigo-400">${inf.influence_score}</p>
+            <span class="text-xs px-1.5 py-0.5 rounded ${cfg.badge}">${cfg.text}</span>
+          </div>
+        </div>`;
+      }).join('');
+      document.getElementById('influencerPanel').innerHTML = rows;
+    }
+
+    // ---- Compare ----
+    document.getElementById('compareForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('compareResult').classList.add('hidden');
+      document.getElementById('compareError').classList.add('hidden');
+      document.getElementById('compareLoading').classList.remove('hidden');
+      document.getElementById('compareBtn').disabled = true;
+
+      try {
+        const formData = new FormData(e.target);
+        const res = await fetch('/compare', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '比較に失敗しました');
+        renderCompare(data.results);
+      } catch (err) {
+        document.getElementById('compareError').textContent = '⚠️ ' + err.message;
+        document.getElementById('compareError').classList.remove('hidden');
+      } finally {
+        document.getElementById('compareLoading').classList.add('hidden');
+        document.getElementById('compareBtn').disabled = false;
+      }
+    });
+
+    function renderCompare(results) {
+      const valid = results.filter(r => !r.error);
+      if (!valid.length) return;
+
+      const palette = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b'];
+
+      // センチメント比較棒グラフ
+      if (compareChart) compareChart.destroy();
+      compareChart = new Chart(document.getElementById('compareChart'), {
+        type: 'bar',
+        data: {
+          labels: valid.map(r => r.keyword),
+          datasets: [
+            { label: 'ポジティブ%', data: valid.map(r => r.summary.positive_pct), backgroundColor: '#16a34a' },
+            { label: 'ネガティブ%', data: valid.map(r => r.summary.negative_pct), backgroundColor: '#dc2626' },
+            { label: 'ニュートラル%', data: valid.map(r => r.summary.neutral_pct), backgroundColor: '#4b5563' },
+          ]
+        },
+        options: {
+          scales: {
+            x: { stacked: true, ticks: { color: '#9ca3af' }, grid: { color: '#1f2937' } },
+            y: { stacked: true, max: 100, ticks: { color: '#9ca3af' }, grid: { color: '#1f2937' } },
+          },
+          plugins: { legend: { labels: { color: '#9ca3af' } } },
+        }
+      });
+
+      // 炎上リスク比較
+      if (riskCompareChart) riskCompareChart.destroy();
+      riskCompareChart = new Chart(document.getElementById('riskCompareChart'), {
+        type: 'bar',
+        data: {
+          labels: valid.map(r => r.keyword),
+          datasets: [{
+            label: '炎上リスクスコア',
+            data: valid.map(r => r.risk.score),
+            backgroundColor: valid.map(r => r.risk.level === 'critical' ? '#dc2626' : r.risk.level === 'warning' ? '#d97706' : '#16a34a'),
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          scales: {
+            x: { max: 100, ticks: { color: '#9ca3af' }, grid: { color: '#1f2937' } },
+            y: { ticks: { color: '#9ca3af' }, grid: { display: false } },
+          },
+          plugins: { legend: { display: false } },
+        }
+      });
+
+      // テーブル
+      const tableRows = valid.map(r => `
+        <tr class="border-b border-gray-800">
+          <td class="px-4 py-3 font-medium text-white">${escapeHtml(r.keyword)}</td>
+          <td class="px-4 py-3 text-green-400">${r.summary.positive_pct}%</td>
+          <td class="px-4 py-3 text-red-400">${r.summary.negative_pct}%</td>
+          <td class="px-4 py-3 text-blue-300">${r.summary.avg_score}</td>
+          <td class="px-4 py-3">
+            <span class="${r.risk.level === 'critical' ? 'text-red-400' : r.risk.level === 'warning' ? 'text-yellow-400' : 'text-green-400'}">${r.risk.score}</span>
+          </td>
+          <td class="px-4 py-3 text-sm text-gray-400">${r.summary.total}件</td>
+        </tr>`).join('');
+
+      document.getElementById('compareTable').innerHTML = `
+        <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+          <table class="w-full text-sm">
+            <thead><tr class="border-b border-gray-700">
+              <th class="px-4 py-3 text-left text-gray-400">キーワード</th>
+              <th class="px-4 py-3 text-left text-gray-400">ポジ%</th>
+              <th class="px-4 py-3 text-left text-gray-400">ネガ%</th>
+              <th class="px-4 py-3 text-left text-gray-400">平均スコア</th>
+              <th class="px-4 py-3 text-left text-gray-400">炎上リスク</th>
+              <th class="px-4 py-3 text-left text-gray-400">件数</th>
+            </tr></thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </div>`;
+
+      document.getElementById('compareResult').classList.remove('hidden');
+    }
+
+    // ---- Report Download ----
+    async function downloadReport() {
+      if (!currentKeyword) return;
+      const btn = document.getElementById('reportBtn');
+      btn.disabled = true;
+      btn.textContent = '生成中...';
+      try {
+        const formData = new FormData();
+        formData.append('keyword', currentKeyword);
+        formData.append('max_results', currentMaxResults);
+        const res = await fetch('/report', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('レポート生成に失敗しました');
+        const html = await res.text();
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sns_report_${currentKeyword}_${new Date().toISOString().slice(0,10)}.html`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        alert('レポート生成エラー: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'レポート生成';
+      }
+    }
+
+    // ---- Tweet Filter ----
     function filterTweets(label, btn) {
-      // ボタンのスタイル切り替え
       document.querySelectorAll('.filter-btn').forEach(b => {
         b.classList.remove('active', 'bg-gray-700', 'text-white');
         b.classList.add('bg-gray-800', 'text-gray-400');
       });
-      if (btn) {
-        btn.classList.add('active', 'bg-gray-700', 'text-white');
-        btn.classList.remove('bg-gray-800', 'text-gray-400');
-      }
+      if (btn) { btn.classList.add('active', 'bg-gray-700', 'text-white'); btn.classList.remove('bg-gray-800', 'text-gray-400'); }
 
       const tweets = label === 'all' ? allTweets : allTweets.filter(t => t.label === label);
       const list = document.getElementById('tweetList');
@@ -239,21 +550,21 @@
       tweets.forEach(t => {
         const cfg = labelConfig[t.label] || labelConfig.neutral;
         const date = t.created_at ? t.created_at.replace('T', ' ').replace('Z', '') : '';
+        const followers = t.follower_count ? `<span class="ml-2">${t.follower_count.toLocaleString()} フォロワー</span>` : '';
         const div = document.createElement('div');
-        div.className = `px-6 py-4 ${cfg.bg} ${cfg.border}`;
+        div.className = `px-6 py-4 ${cfg.bg}`;
         div.innerHTML = `
           <div class="flex items-start justify-between gap-4">
             <div class="flex-1">
               <p class="text-white text-sm leading-relaxed mb-2">${escapeHtml(t.text)}</p>
-              <p class="text-xs text-gray-500">@${escapeHtml(t.author)} · ${date}</p>
-              <p class="text-xs ${cfg.color} mt-1">💬 ${escapeHtml(t.reason)}</p>
+              <p class="text-xs text-gray-500">@${escapeHtml(t.author)} · ${date}${followers}</p>
+              <p class="text-xs ${cfg.color} mt-1">${escapeHtml(t.reason)}</p>
             </div>
             <div class="text-right shrink-0">
               <span class="text-xs px-2 py-1 rounded-full ${cfg.badge}">${cfg.text}</span>
               <p class="text-2xl font-bold ${cfg.color} mt-2">${t.score}</p>
             </div>
-          </div>
-        `;
+          </div>`;
         list.appendChild(div);
       });
 
