@@ -3,6 +3,7 @@ Claude によるセンチメント分析モジュール
 """
 
 import json
+import re
 import anthropic
 
 SYSTEM_PROMPT = """あなたはSNS投稿のセンチメント分析の専門家です。
@@ -32,6 +33,11 @@ def analyze_tweet(client: anthropic.Anthropic, tweet_text: str) -> dict:
     )
 
     raw = message.content[0].text.strip()
+
+    # マークダウンコードブロックを除去 (```json ... ``` など)
+    match = re.search(r'\{.*\}', raw, re.DOTALL)
+    if match:
+        raw = match.group()
 
     try:
         result = json.loads(raw)
